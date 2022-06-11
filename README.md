@@ -47,12 +47,11 @@ $ serve lp
 given the following entry in [config.json](config.json):
 
 ```json
-...
-"alias": {
-"lp": "/path/to/linpeas.sh",
-...
+{
+  "alias": {
+    "lp": "/path/to/linpeas.sh"
+  }
 }
-...
 ```
 
 ### 2. Serve dynamic content
