@@ -25,8 +25,8 @@ from http import HTTPStatus
 
 from binaryornot.check import is_binary
 
-from core.config import eval_index, get_index
-from core.constants import DEFAULT_PORT
+from core.config import eval_index, get_index, eval_bind
+from core.constants import DEFAULT_PORT, DEFAULT_BIND
 from core.log import log_normal, set_global_verbose, log_verbose, YELLOW, NO_COLOR, log_error, is_verbose_mode, ask, \
     log_success
 from core.ssl_util import cert_gen
@@ -590,6 +590,7 @@ def start(port, bind, index, use_ssl):
     protocol = "HTTP/1.0"
 
     index = eval_index(index)
+    bind = eval_bind(bind)
 
     port = get_available_port(port)
 
@@ -600,7 +601,7 @@ def start(port, bind, index, use_ssl):
 
     address = f"http{'s' if use_ssl else ''}://{bind}:{port}"
     log_normal(
-        f"🚀 Serving {YELLOW + os.path.abspath(index) + NO_COLOR} at {address}")
+        f"Serving {YELLOW + os.path.abspath(index) + NO_COLOR} at {address}")
 
     if os.path.isfile(index):
         check_copy(index, address)
@@ -626,8 +627,8 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--bind', '-b', metavar='addr', default="0.0.0.0",
-                        help='Specify alternate bind address, by default all interfaces')
+    parser.add_argument('--bind', '-b', metavar='addr',
+                        help=f'Specify alternate bind address, default: {DEFAULT_BIND}')
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Increase verbosity, print request')
     parser.add_argument('index', default=os.getcwd(), nargs='?',
@@ -639,7 +640,8 @@ if __name__ == '__main__':
     parser.add_argument('--ssl', '-ssl', action='store_true',
                         help='Use SSL')
 
-    parser.add_argument('--kv', default="", help='Specify match-and-replace rules, format: key=val1;key2=val2')
+    parser.add_argument('--kv', default="", metavar='K1=V1;K2=V2;',
+                        help='Specify match-and-replace rules')
 
     args = parser.parse_args()
 

@@ -1,6 +1,6 @@
 {
   "alias": {
-    "linpeas": "/opt/payloads/post-exploit/PEASS-ng/linPEAS/linpeas.sh",
+    "lps": "/opt/payloads/post-exploit/PEASS-ng/linPEAS/linpeas.sh",
     "post": "/opt/payloads/post-exploit",
     "sh": "/opt/payloads/post-exploit/SharpHound.ps1"
   },
@@ -19,5 +19,6 @@
     9003,
     9004,
     9005
-  ]
+  ],
+  "bind": "tun0"
 }
