@@ -36,6 +36,3 @@ def cert_gen(
         f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode("utf-8"))
 
     return certfile
-
-
-cert_gen()

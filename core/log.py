@@ -5,7 +5,6 @@ SUCCESS = '\033[92m'
 WARNING = '\033[93m'
 ERROR = '\033[91m'
 YELLOW = '\033[0;33m'
-ASK = '\033[35m'
 NO_COLOR = '\033[0m'
 BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
@@ -13,8 +12,18 @@ UNDERLINE = '\033[4m'
 is_verbose = False
 
 
+def ask(msg: str):
+    try:
+        res = input(f"{INFO}{msg}[Enter] {NO_COLOR}")
+    except KeyboardInterrupt:
+        print("")
+        return False
+
+    return not res or res == "Y" or res == "y";
+
+
 def log_success(log: str):
-    print(f"{SUCCESS}{BOLD} {log}{NO_COLOR}")
+    print(f"{SUCCESS}{BOLD}{log}{NO_COLOR}")
 
 
 def is_verbose_mode():
