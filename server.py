@@ -640,7 +640,7 @@ if __name__ == '__main__':
     parser.add_argument('--ssl', '-ssl', action='store_true',
                         help='Use SSL')
 
-    parser.add_argument('--kv', default="", metavar='K1=V1;K2=V2;',
+    parser.add_argument('--kv', default="", metavar='K1=V1:K2=V2',
                         help='Specify match-and-replace rules')
 
     args = parser.parse_args()
@@ -653,7 +653,7 @@ if __name__ == '__main__':
     if key_values:
         try:
             log_verbose("Rules:")
-            for part in key_values.split(";"):
+            for part in key_values.split(":"):
                 pair = part.split("=")
                 replacers[pair[0]] = pair[1]
                 log_verbose(f"\t{pair[0]} ➝  {pair[1]}")

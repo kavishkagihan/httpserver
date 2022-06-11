@@ -44,6 +44,9 @@ def eval_bind(bind):
 def eval_index(index):
     data = get_json()
 
+    if index == "rev":
+        return os.path.dirname(os.path.realpath(__file__)) + "/shell.sh"
+
     for i, v in data['alias'].items():
         if index == i:
             return v
