@@ -1,5 +1,6 @@
 {
   "alias": {
+    "rev": "$res/shell.sh",
     "lps": "/opt/payloads/post-exploit/PEASS-ng/linPEAS/linpeas.sh",
     "post": "/opt/payloads/post-exploit",
     "sh": "/opt/payloads/post-exploit/SharpHound.ps1"

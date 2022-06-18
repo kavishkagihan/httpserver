@@ -24,7 +24,7 @@ optional arguments:
 > If no arguments are specified, it serves files from the current directory under the port and interface specified in [config.json](config.json).
 
 ```bash
-$ alias serve="../path-to/http-server/server.py"
+$ alias serve="../path-to/httpserver/server.py"
 $ serve /example/directory
 ```
 
@@ -56,7 +56,7 @@ given the following entry in [config.json](config.json):
 
 ### 2. Serve dynamic content
 
-> Reverse shell, template: [shell.sh](core/shell.sh)
+> Reverse shell, template: [shell.sh](res/shell.sh)
 
 ```bash
 $ serve rev --kv REPLACE_IP=$ip:REPLACE_PORT=9000

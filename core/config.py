@@ -1,15 +1,13 @@
-import json
 import os.path
 
-import netifaces as ni
-
-from core.constants import DEFAULT_BIND
+from core.constants import DEFAULT_BIND, RES_MARKER
 from core.log import log_error
 
 data = None
 
 
 def get_json():
+    import json
     # cache it
     global data
     if data:
@@ -32,6 +30,7 @@ def get_ports():
 
 
 def eval_bind(bind):
+    import netifaces as ni
     data = get_json()
     if data['bind']:
         try:
@@ -44,12 +43,14 @@ def eval_bind(bind):
 def eval_index(index):
     data = get_json()
 
-    if index == "rev":
-        return os.path.dirname(os.path.realpath(__file__)) + "/shell.sh"
+    res_dir = os.path.dirname(os.path.realpath(__file__)) + "/../res"  # executed within core folder
 
     for i, v in data['alias'].items():
         if index == i:
-            return v
+            index = v
+            break
+
+    index = index.replace(RES_MARKER, res_dir)
 
     if not os.path.exists(index):
         import re

@@ -1,6 +1,3 @@
-from OpenSSL import crypto
-
-
 def cert_gen(
         emailAddress="emailAddress",
         commonName="commonName",
@@ -12,6 +9,8 @@ def cert_gen(
         serialNumber=0,
         validityStartInSeconds=0,
         validityEndInSeconds=10 * 365 * 24 * 60 * 60):
+    from OpenSSL import crypto
+
     k = crypto.PKey()
     k.generate_key(crypto.TYPE_RSA, 4096)
     cert = crypto.X509()

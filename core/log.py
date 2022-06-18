@@ -9,7 +9,7 @@ NO_COLOR = '\033[0m'
 BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 
-is_verbose = False
+IS_VERBOSE = False
 
 
 def ask(msg: str):
@@ -27,20 +27,23 @@ def log_success(log: str):
 
 
 def is_verbose_mode():
-    return is_verbose
+    return IS_VERBOSE
 
 
 def set_global_verbose(v):
-    global is_verbose
-    is_verbose = v
+    global IS_VERBOSE
+    IS_VERBOSE = v
 
 
-def log_normal(log: str):
-    print(log)
+def log_normal(log: str, bold=False):
+    if bold:
+        print(f"{BOLD}{log}{NO_COLOR}")
+    else:
+        print(log)
 
 
 def log_verbose(log: str):
-    if is_verbose:
+    if IS_VERBOSE:
         print(log)
 
 
