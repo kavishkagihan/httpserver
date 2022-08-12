@@ -3,7 +3,10 @@
     "rev": "$res/shell.sh",
     "lps": "/opt/payloads/post-exploit/PEASS-ng/linPEAS/linpeas.sh",
     "post": "/opt/payloads/post-exploit",
-    "sh": "/opt/payloads/post-exploit/SharpHound.ps1"
+    "sh": "/opt/payloads/post-exploit/SharpHound.ps1",
+    "deepce": "/opt/payloads/post-exploit/deepce/deepce.sh",
+    "chisel": "/opt/payloads/post-exploit/chisel",
+    "pspy": "/opt/payloads/post-exploit/pspy64"
   },
   "index": [
     "index.html",
@@ -21,5 +24,5 @@
     9004,
     9005
   ],
-  "bind": "tun0"
+  "bind": "tun0|external"
 }

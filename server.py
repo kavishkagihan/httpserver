@@ -28,18 +28,21 @@ from urllib.parse import urlparse, parse_qs
 from binaryornot.check import is_binary
 
 from core.config import eval_index, get_index, eval_bind
-from core.constants import DEFAULT_PORT, DEFAULT_BIND
+from core.constants import DEFAULT_PORT, DEFAULT_BIND, EXTERNAL_BIND
 from core.log import log_normal, set_global_verbose, log_verbose, YELLOW, NO_COLOR, log_error, is_verbose_mode, ask, \
-    log_success
+    log_success, BOLD
 from core.ssl_util import cert_gen
-from core.util import get_available_port, is_b64
+from core.util import get_available_port, is_b64, get_external_ip
 
+
+import urllib3
+urllib3.disable_warnings()
 
 # Default error message template
 
 
 class HTTPServer(socketserver.TCPServer):
-    allow_reuse_address = 1  # Seems to make sense in testing environment
+    allow_reuse_address = True
 
     def server_bind(self):
         self.allow_reuse_address = True
@@ -226,6 +229,9 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         self.log_request(code)
         self.send_response_only(code, message)
         self.send_header('Date', self.date_time_string())
+        if headers:
+            for key, value in headers.items():
+                self.send_header(key, value)
 
     def send_response_only(self, code, message=None):
         """Send the response header only."""
@@ -300,8 +306,8 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
         self.log_message(format, *args)
 
     def log_message(self, format, *args):
-        log_normal("%s - - [%s] %s" %
-                   (self.address_string(),
+        log_normal("%s%s%s - - [%s] %s" %
+                   (BOLD, self.address_string(), NO_COLOR,
                     self.log_date_time_string(),
                     format % args))
 
@@ -340,16 +346,6 @@ class BaseHTTPRequestHandler(socketserver.StreamRequestHandler):
 
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
-    """Simple HTTP request handler with GET and HEAD commands.
-
-    This serves files from the current directory and any of its
-    subdirectories.  The MIME type for files is determined by
-    calling the .guess_type() method.
-
-    The GET and HEAD requests are identical except that the HEAD
-    request omits the actual contents of the file.
-
-    """
 
     def __init__(self, *args, index=None, replacers={}, **kwargs):
         if index is None:
@@ -359,13 +355,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         super().__init__(*args, **kwargs)
 
     def do_HEAD(self):
-        """Serve a GET request."""
         f = self.send_head()
         if f:
             f.close()
 
     def do_GET(self):
-        """Serve a GET request."""
         f = self.send_head()
 
         path = self.translate_path(self.path)
@@ -374,8 +368,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             try:
                 if os.path.isdir(path) or (str(type(f)) == "<class '_io.BufferedReader'>" and not is_binary(path)):
                     s = str(f.read().decode('utf-8'))
-                    for key, value in replacers.items():
-                        s = s.replace(key, value)
+                    if replacers:
+                        for key, value in replacers.items():
+                            s = s.replace(key, value)
                     self.wfile.write(bytes(s, "utf-8"))
                 else:
                     self.copyfile(f, self.wfile)
@@ -447,6 +442,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                             return None
 
             self.send_response(HTTPStatus.OK)
+
             self.send_header("Content-type", ctype)
             self.send_header("Last-Modified",
                              self.date_time_string(fs.st_mtime))
@@ -566,6 +562,7 @@ class DualStackServer(ThreadingHTTPServer):
     def server_bind(self):
         # suppress exception when protocol is IPv4
         with contextlib.suppress(Exception):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.socket.setsockopt(
                 socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
         return super().server_bind()
@@ -574,6 +571,9 @@ class DualStackServer(ThreadingHTTPServer):
 class CORSRequestHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
         SimpleHTTPRequestHandler.end_headers(self)
 
 
@@ -590,7 +590,7 @@ def check_copy(index, address):
     elif index.endswith(".exe") or index.endswith("msi"):
         copy_str = f"powershell -c \"wget {address} -O \Windows\system32\spool\drivers\color\{os.path.basename(index)}\""
     else:
-        copy_str = f"wget {address} -O /dev/shm/{os.path.basename(index)}"
+        copy_str = f"wget {address} -O /tmp/{os.path.basename(index)}"
 
     if copy_str and ask(f"Copy '{copy_str}' to clipboard? "):
         copy(copy_str)
@@ -604,12 +604,16 @@ def start(port, bind, index, use_ssl):
     index = eval_index(index)
     bind = eval_bind(bind)
 
-    port = get_available_port(port)
+    port = get_available_port(bind, port)
 
     if port < 0:
         log_error("No open port available", exit=True)
 
-    server_class.address_family, addr = _get_best_family(bind, port)
+    if bind == EXTERNAL_BIND:
+        bind = get_external_ip()
+        server_class.address_family, addr = _get_best_family(DEFAULT_BIND, port)
+    else:
+        server_class.address_family, addr = _get_best_family(bind, port)
 
     address = f"http{'s' if use_ssl else ''}://{bind}:{port}"
     log_normal(
@@ -632,12 +636,23 @@ def start(port, bind, index, use_ssl):
                                                ssl_version=ssl.PROTOCOL_TLS)
             httpd.serve_forever()
         except KeyboardInterrupt:
+            httpd.shutdown()
+            httpd.socket.close()
             log_error("\nKeyboard interrupt received, exiting.", exit=True)
 
 
-if __name__ == '__main__':
-    import argparse
+import argparse
 
+
+class ParseKwargs(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, dict())
+        for value in values:
+            key, value = value.split(':', 1)
+            getattr(namespace, self.dest)[key] = value
+
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--bind', '-b', metavar='addr',
                         help=f'Specify alternate bind address, default: {DEFAULT_BIND}')
@@ -652,26 +667,36 @@ if __name__ == '__main__':
     parser.add_argument('--ssl', '-ssl', action='store_true',
                         help='Use SSL')
 
-    parser.add_argument('--kv', default="", metavar='K1=V1:K2=V2',
+    parser.add_argument('--kv', default="", metavar='K1:V1 K2:V2', nargs='*', action=ParseKwargs,
                         help='Specify match-and-replace rules')
+    parser.add_argument('-H', default="", metavar='H1:V1 H2:V2', nargs='*', action=ParseKwargs,
+                        help='Specify headers')
 
     args = parser.parse_args()
 
     set_global_verbose(args.verbose)
 
-    key_values = args.kv
-    replacers = {}
+    replacers = args.kv
 
-    if key_values:
+    if replacers:
         try:
             log_verbose("Rules:")
-            for part in key_values.split(":"):
-                pair = part.split("=")
-                replacers[pair[0]] = pair[1]
-                log_verbose(f"\t{pair[0]} ➝  {pair[1]}")
+            for k, v in replacers.items():
+                log_verbose(f"\t{k} ➝  {v}")
                 pass
         except:
-            log_normal("Invalid replace values given")
+            log_error("Invalid replace values given", True)
+
+    headers = args.H
+
+    if headers:
+        try:
+            log_verbose("Headers:")
+            for k, v in headers.items():
+                log_verbose(f"\t{k}: {v}")
+                pass
+        except:
+            log_error("Invalid headers given", True)
 
     start(
         port=args.port,

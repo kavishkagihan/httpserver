@@ -1,6 +1,6 @@
 import os.path
 
-from core.constants import DEFAULT_BIND, RES_MARKER
+from core.constants import DEFAULT_BIND, RES_MARKER, EXTERNAL_BIND
 from core.log import log_error
 
 data = None
@@ -32,11 +32,20 @@ def get_ports():
 def eval_bind(bind):
     import netifaces as ni
     data = get_json()
-    if data['bind']:
-        try:
-            return ni.ifaddresses(data['bind'])[ni.AF_INET][0]['addr']
-        except:
-            pass
+    data_bind = data['bind']
+    if data_bind:
+
+        binds = data_bind.split("|", 2)
+
+        for b in binds:
+            if b == EXTERNAL_BIND:
+                return EXTERNAL_BIND
+
+            try:
+                return ni.ifaddresses(b)[ni.AF_INET][0]['addr']
+            except:
+                pass
+
     return DEFAULT_BIND if not bind else bind
 
 

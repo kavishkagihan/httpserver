@@ -1,3 +1,4 @@
 DEFAULT_PORT = 9000
 DEFAULT_BIND = "0.0.0.0"
+EXTERNAL_BIND = "external"
 RES_MARKER = "$res"
